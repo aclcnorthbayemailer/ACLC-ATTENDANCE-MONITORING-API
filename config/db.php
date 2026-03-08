@@ -1,23 +1,26 @@
 <?php
-/**
- * config/db.php
- * Reads Railway MySQL environment variables automatically.
- */
-
-$host = getenv('MYSQLHOST')     ?: getenv('DB_HOST') ?: 'localhost';
-$port = getenv('MYSQLPORT')     ?: getenv('DB_PORT') ?: '3306';
-$user = getenv('MYSQLUSER')     ?: getenv('DB_USER') ?: 'root';
-$pass = getenv('MYSQLPASSWORD') ?: getenv('DB_PASS') ?: '';
-$name = getenv('MYSQLDATABASE') ?: getenv('DB_NAME') ?: 'railway';
-
-define('DB_HOST', $host);
-define('DB_PORT', $port);
-define('DB_USER', $user);
-define('DB_PASS', $pass);
-define('DB_NAME', $name);
 
 function getDB() {
-    $conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME, (int)DB_PORT);
+    // Try parsing from full URL first
+    $url = getenv('MYSQL_URL') ?: getenv('DATABASE_URL') ?: getenv('MYSQL_PUBLIC_URL') ?: null;
+
+    if ($url) {
+        $parts = parse_url($url);
+        $host  = $parts['host'];
+        $port  = $parts['port'] ?? 3306;
+        $user  = $parts['user'];
+        $pass  = isset($parts['pass']) ? urldecode($parts['pass']) : '';
+        $name  = ltrim($parts['path'], '/');
+    } else {
+        // Fallback to individual env vars
+        $host  = getenv('MYSQLHOST')     ?: 'localhost';
+        $port  = getenv('MYSQLPORT')     ?: 3306;
+        $user  = getenv('MYSQLUSER')     ?: 'root';
+        $pass  = getenv('MYSQLPASSWORD') ?: '';
+        $name  = getenv('MYSQLDATABASE') ?: 'railway';
+    }
+
+    $conn = new mysqli($host, $user, $pass, $name, (int)$port);
     if ($conn->connect_error) {
         http_response_code(500);
         echo json_encode(['error' => 'Database connection failed: ' . $conn->connect_error]);
@@ -26,3 +29,4 @@ function getDB() {
     $conn->set_charset('utf8mb4');
     return $conn;
 }
+
