@@ -1,19 +1,20 @@
 <?php
 /**
  * config/db.php
- * ─────────────────────────────────────────
- * On Railway: credentials are auto-injected as environment variables.
- * Locally (XAMPP): falls back to the defaults below.
- *
- * Railway env vars it reads automatically:
- *   MYSQLHOST, MYSQLUSER, MYSQLPASSWORD, MYSQLDATABASE, MYSQLPORT
+ * Reads Railway MySQL environment variables automatically.
  */
 
-define('DB_HOST', getenv('MYSQLHOST')     ?: 'localhost');
-define('DB_PORT', getenv('MYSQLPORT')     ?: '3306');
-define('DB_USER', getenv('MYSQLUSER')     ?: 'root');
-define('DB_PASS', getenv('MYSQLPASSWORD') ?: '');
-define('DB_NAME', getenv('MYSQLDATABASE') ?: 'attendease_db');
+$host = getenv('MYSQLHOST')     ?: getenv('DB_HOST') ?: 'localhost';
+$port = getenv('MYSQLPORT')     ?: getenv('DB_PORT') ?: '3306';
+$user = getenv('MYSQLUSER')     ?: getenv('DB_USER') ?: 'root';
+$pass = getenv('MYSQLPASSWORD') ?: getenv('DB_PASS') ?: '';
+$name = getenv('MYSQLDATABASE') ?: getenv('DB_NAME') ?: 'railway';
+
+define('DB_HOST', $host);
+define('DB_PORT', $port);
+define('DB_USER', $user);
+define('DB_PASS', $pass);
+define('DB_NAME', $name);
 
 function getDB() {
     $conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME, (int)DB_PORT);
