@@ -2,17 +2,9 @@
 ini_set('display_errors', 0);
 error_reporting(0);
 
-// CORS
-$origin  = $_SERVER['HTTP_ORIGIN'] ?? '';
-$allowed = ['https://aclc-attendance-monitoring-web.vercel.app','http://localhost','http://127.0.0.1'];
-header("Access-Control-Allow-Origin: " . (in_array($origin, $allowed) ? $origin : $allowed[0]));
-header("Access-Control-Allow-Credentials: true");
-header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Auth-Token, X-Requested-With");
-header("Content-Type: application/json");
-
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(204); exit; }
-if ($_SERVER['REQUEST_METHOD'] !== 'POST')    { echo json_encode(['error'=>'Method not allowed']); exit; }
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    echo json_encode(['error' => 'Method not allowed']); exit;
+}
 
 require_once __DIR__ . '/../config/db.php';
 
@@ -37,17 +29,14 @@ if (!$user) {
     echo json_encode(['error' => 'Incorrect username or password.']); exit;
 }
 
-// Support both hashed and plain-text passwords
 $ok = password_verify($password, $user['password']) || ($password === $user['password']);
 if (!$ok) {
     http_response_code(401);
     echo json_encode(['error' => 'Incorrect username or password.']); exit;
 }
 
-// Generate token safely — avoid random_bytes on older PHP
-$token = md5(uniqid($username . time(), true)) . md5(uniqid($role . rand(), true));
-
-$upd = $db->prepare("UPDATE users SET auth_token = ? WHERE id = ?");
+$token = md5(uniqid('a', true)) . md5(uniqid('b', true));
+$upd   = $db->prepare("UPDATE users SET auth_token = ? WHERE id = ?");
 $upd->bind_param('si', $token, $user['id']);
 $upd->execute();
 $upd->close();
