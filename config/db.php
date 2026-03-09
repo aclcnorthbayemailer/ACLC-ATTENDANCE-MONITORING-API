@@ -21,7 +21,7 @@ function getDB() {
     $db = @new mysqli($host, $user, $pass, $name, $port);
     if ($db->connect_error) {
         http_response_code(500);
-        echo json_encode(['error' => 'DB connection failed: ' . $db->connect_error]);
+        echo json_encode(['error' => 'DB failed: ' . $db->connect_error]);
         exit;
     }
     $db->set_charset('utf8mb4');
