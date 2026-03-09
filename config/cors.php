@@ -1,4 +1,7 @@
 <?php
+ini_set('display_errors', 0);
+error_reporting(0);
+
 $allowed_origins = [
     'https://aclc-attendance-monitoring-web.vercel.app',
     'http://localhost',
