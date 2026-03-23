@@ -1,27 +1,43 @@
 <?php
-require_once 'config/db.php';
-$db = getDB();
-$results = [];
+ini_set('display_errors', 1);
+error_reporting(E_ALL);
+
+// Connect directly without requiring db.php
+$url = getenv('MYSQL_URL') ?: getenv('DATABASE_URL') ?: null;
+if ($url) {
+    $p    = parse_url($url);
+    $host = $p['host'];
+    $port = (int)($p['port'] ?? 3306);
+    $user = $p['user'];
+    $pass = urldecode($p['pass'] ?? '');
+    $name = ltrim($p['path'], '/');
+} else {
+    $host = getenv('MYSQLHOST')     ?: 'localhost';
+    $port = (int)(getenv('MYSQLPORT') ?: 3306);
+    $user = getenv('MYSQLUSER')     ?: 'root';
+    $pass = getenv('MYSQLPASSWORD') ?: '';
+    $name = getenv('MYSQLDATABASE') ?: 'railway';
+}
+
+echo "<h2>Connecting to: $host:$port / $name as $user</h2>";
+
+$db = new mysqli($host, $user, $pass, $name, $port);
+if ($db->connect_error) {
+    die("<p style='color:red'>Connection failed: " . $db->connect_error . "</p>");
+}
+echo "<p style='color:green'>✅ Connected!</p>";
 
 $sqls = [
     "ALTER TABLE users ADD COLUMN IF NOT EXISTS auth_token VARCHAR(64) DEFAULT NULL",
-    "ALTER TABLE attendance ADD COLUMN IF NOT EXISTS scanned_at VARCHAR(20) DEFAULT NULL",
-    "ALTER TABLE attendance ADD COLUMN IF NOT EXISTS attendance_date DATE DEFAULT NULL",
-    "UPDATE attendance SET attendance_date = date WHERE attendance_date IS NULL AND date IS NOT NULL",
 ];
 
 foreach ($sqls as $sql) {
-    if ($db->query($sql)) $results[] = "✅ Done: " . substr($sql, 0, 60) . "…";
-    else $results[] = "⚠️ Skipped (may already exist): " . $db->error;
+    if ($db->query($sql)) {
+        echo "<p style='color:green'>✅ " . htmlspecialchars($sql) . "</p>";
+    } else {
+        echo "<p style='color:red'>❌ " . htmlspecialchars($db->error) . "</p>";
+    }
 }
+
 $db->close();
-?>
-<!DOCTYPE html><html><body style="font-family:Arial;max-width:600px;margin:60px auto;padding:20px;background:#f5f6fa">
-<div style="background:white;border-radius:12px;padding:24px;box-shadow:0 2px 12px rgba(0,0,0,0.08)">
-<h2 style="color:#003087">AttendEase — DB Update</h2>
-<?php foreach ($results as $r): ?>
-  <p style="margin:8px 0"><?= htmlspecialchars($r) ?></p>
-<?php endforeach; ?>
-<hr>
-<p style="color:#16a34a;font-weight:bold">✅ Done! Delete setup.php now for security.</p>
-</div></body></html>
+echo "<h3 style='color:green'>Done! Delete setup.php now.</h3>";
