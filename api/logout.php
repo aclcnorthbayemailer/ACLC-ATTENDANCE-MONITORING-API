@@ -1,11 +1,15 @@
 <?php
-/**
- * api/logout.php
- * POST /api/logout.php
- * Clears the session and logs the user out.
- */
+ini_set('display_errors', 0);
+error_reporting(0);
+header('Content-Type: application/json');
+require_once __DIR__ . '/../config/db.php';
 
-require_once '../config/cors.php';
-session_start();
-session_destroy();
-respond(['success' => true, 'message' => 'Logged out successfully.']);
+$token = $_SERVER['HTTP_X_AUTH_TOKEN'] ?? '';
+if ($token) {
+    $db   = getDB();
+    $stmt = $db->prepare("UPDATE users SET auth_token = NULL WHERE auth_token = ?");
+    $stmt->bind_param('s', $token);
+    $stmt->execute();
+    $stmt->close();
+}
+respond(['success' => true]);
