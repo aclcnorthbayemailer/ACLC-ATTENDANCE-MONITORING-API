@@ -12,7 +12,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 $body     = getBody();
 $username = trim($body['username'] ?? '');
-$password = trim($body['password'] ?? '');
+$password = $body['password'] ?? ''; // Don't trim — passwords can have spaces
 $role     = trim($body['role']     ?? '');
 
 if (!$username || !$password || !$role) {
@@ -26,25 +26,36 @@ if (!in_array($role, ['admin','teacher','student'])) {
 
 $db = getDB();
 
+// Find user by username AND role
 $stmt = $db->prepare("SELECT id, username, password, role, name, initials, section, usn FROM users WHERE username = ? AND role = ? LIMIT 1");
 $stmt->bind_param('ss', $username, $role);
 $stmt->execute();
 $user = $stmt->get_result()->fetch_assoc();
 $stmt->close();
 
+// User not found
 if (!$user) {
     ob_end_clean();
     http_response_code(401);
     respond(['error' => 'Incorrect username or password.']);
 }
 
-$ok = password_verify($password, $user['password']) || ($password === $user['password']);
-if (!$ok) {
+// Strictly check password
+$passwordOk = false;
+if (password_verify($password, $user['password'])) {
+    $passwordOk = true;
+} elseif ($password === $user['password']) {
+    // Plain text match (for dev accounts)
+    $passwordOk = true;
+}
+
+if (!$passwordOk) {
     ob_end_clean();
     http_response_code(401);
     respond(['error' => 'Incorrect username or password.']);
 }
 
+// Generate new token — invalidates any previous session
 $token = bin2hex(random_bytes(32));
 $upd = $db->prepare("UPDATE users SET auth_token = ? WHERE id = ?");
 $upd->bind_param('si', $token, $user['id']);
