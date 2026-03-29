@@ -1,14 +1,11 @@
 <?php
-ini_set('display_errors', 0);
-error_reporting(0);
-
 function getDB() {
     $url = getenv('MYSQL_URL') ?: getenv('DATABASE_URL') ?: null;
     if ($url) {
         $p    = parse_url($url);
-        $host = $p['host']              ?? '';
-        $port = (int)($p['port']        ?? 3306);
-        $user = $p['user']              ?? '';
+        $host = $p['host']  ?? '';
+        $port = (int)($p['port'] ?? 3306);
+        $user = $p['user']  ?? '';
         $pass = isset($p['pass']) ? urldecode($p['pass']) : '';
         $name = ltrim($p['path'] ?? '', '/');
     } else {
@@ -20,6 +17,7 @@ function getDB() {
     }
     $conn = @new mysqli($host, $user, $pass, $name, $port);
     if ($conn->connect_error) {
+        if (ob_get_level()) ob_end_clean();
         http_response_code(500);
         echo json_encode(['error' => 'DB connection failed: ' . $conn->connect_error]);
         exit;
