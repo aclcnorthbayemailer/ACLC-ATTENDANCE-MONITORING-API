@@ -1,17 +1,28 @@
 <?php
+ob_start();
 ini_set('display_errors', 0);
 error_reporting(0);
 require_once __DIR__ . '/../config/cors.php';
+require_once __DIR__ . '/../config/db.php';
 
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') respondError('Method not allowed.', 405);
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    ob_end_clean();
+    respondError('Method not allowed.', 405);
+}
 
 $body     = getBody();
 $username = trim($body['username'] ?? '');
 $password = trim($body['password'] ?? '');
 $role     = trim($body['role']     ?? '');
 
-if (!$username || !$password || !$role) respondError('All fields are required.');
-if (!in_array($role, ['admin','teacher','student'])) respondError('Invalid role.');
+if (!$username || !$password || !$role) {
+    ob_end_clean();
+    respondError('All fields are required.');
+}
+if (!in_array($role, ['admin','teacher','student'])) {
+    ob_end_clean();
+    respondError('Invalid role.');
+}
 
 $db = getDB();
 
@@ -21,10 +32,18 @@ $stmt->execute();
 $user = $stmt->get_result()->fetch_assoc();
 $stmt->close();
 
-if (!$user) { http_response_code(401); respond(['error' => 'Incorrect username or password.']); }
+if (!$user) {
+    ob_end_clean();
+    http_response_code(401);
+    respond(['error' => 'Incorrect username or password.']);
+}
 
 $ok = password_verify($password, $user['password']) || ($password === $user['password']);
-if (!$ok) { http_response_code(401); respond(['error' => 'Incorrect username or password.']); }
+if (!$ok) {
+    ob_end_clean();
+    http_response_code(401);
+    respond(['error' => 'Incorrect username or password.']);
+}
 
 $token = bin2hex(random_bytes(32));
 $upd = $db->prepare("UPDATE users SET auth_token = ? WHERE id = ?");
@@ -33,6 +52,7 @@ $upd->execute();
 $upd->close();
 $db->close();
 
+ob_end_clean();
 respond([
     'success' => true,
     'token'   => $token,
