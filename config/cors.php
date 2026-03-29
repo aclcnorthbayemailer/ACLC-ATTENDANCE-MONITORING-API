@@ -28,12 +28,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 function respond($data, $code = 200) {
+    if (ob_get_level()) ob_end_clean();
     http_response_code($code);
     echo json_encode($data);
     exit;
 }
 
 function respondError($msg, $code = 400) {
+    if (ob_get_level()) ob_end_clean();
     http_response_code($code);
     echo json_encode(['success' => false, 'error' => $msg]);
     exit;
